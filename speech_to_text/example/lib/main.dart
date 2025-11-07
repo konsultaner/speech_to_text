@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'platform_initialize_options.dart';
 
 void main() => runApp(const SpeechSampleApp());
 
@@ -27,6 +29,8 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
   String lastError = '';
   String lastStatus = '';
   List<LocaleName> _localeNames = [];
+  String _platformStatus = 'Platform options not evaluated yet.';
+  bool _platformStatusIsWarning = false;
   final SpeechToText speech = SpeechToText();
 
   SpeechExampleConfig currentOptions = SpeechExampleConfig(
@@ -55,10 +59,17 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
   Future<void> initSpeechState() async {
     _logEvent('Initialize');
     try {
+      final platformOptions = platformInitializeOptions();
+      final (message, isWarning) = _describePlatformOptions(platformOptions);
+      setState(() {
+        _platformStatus = message;
+        _platformStatusIsWarning = isWarning;
+      });
       var hasSpeech = await speech.initialize(
         onError: errorListener,
         onStatus: statusListener,
         debugLogging: currentOptions.debugLogging,
+        options: platformOptions,
       );
       if (hasSpeech) {
         speech.unexpectedPhraseAggregator = _punctAggregator;
@@ -110,6 +121,10 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
                   label: const Text('Session Options'),
                 ),
               ],
+            ),
+            PlatformStatusBanner(
+              message: _platformStatus,
+              isWarning: _platformStatusIsWarning,
             ),
             SpeechControlWidget(_hasSpeech, speech.isListening, startListening,
                 stopListening, cancelListening),
@@ -200,6 +215,67 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
       var eventTime = DateTime.now().toIso8601String();
       debugPrint('$eventTime $eventDescription');
     }
+  }
+
+  (String, bool) _describePlatformOptions(
+      List<SpeechConfigOption> platformOptions) {
+    final linuxOptions =
+        platformOptions.where((option) => option.platform == 'linux').toList();
+    if (linuxOptions.isEmpty) {
+      if (defaultTargetPlatform == TargetPlatform.linux) {
+        return (
+          'Linux backend not configured. Set SPEECH_TO_TEXT_LINUX_MODEL before running to enable Vosk.',
+          true
+        );
+      }
+      return (
+        'Using default ${describeEnum(defaultTargetPlatform)} configuration.',
+        false
+      );
+    }
+    final modelPath = _stringValue(linuxOptions, 'modelPath');
+    final locale = _stringValue(linuxOptions, 'modelLocale');
+    final label = _stringValue(linuxOptions, 'modelDisplayName');
+    final buffer = StringBuffer('Linux backend configured');
+    if ((label ?? '').isNotEmpty || (locale ?? '').isNotEmpty) {
+      buffer.write(' (');
+      if ((label ?? '').isNotEmpty) {
+        buffer.write(label);
+      }
+      if ((label ?? '').isNotEmpty && (locale ?? '').isNotEmpty) {
+        buffer.write(' · ');
+      }
+      if ((locale ?? '').isNotEmpty) {
+        buffer.write(locale);
+      }
+      buffer.write(')');
+    }
+    if ((modelPath ?? '').isNotEmpty) {
+      buffer.write(' from ${_basename(modelPath!)}');
+    }
+    buffer.write('.');
+    return (buffer.toString(), false);
+  }
+
+  SpeechConfigOption? _optionByName(
+      List<SpeechConfigOption> options, String name) {
+    for (final option in options) {
+      if (option.name == name) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  String? _stringValue(List<SpeechConfigOption> options, String name) {
+    final value = _optionByName(options, name)?.value;
+    return value is String ? value : null;
+  }
+
+  String _basename(String path) {
+    final normalized = path.replaceAll('\\', '/');
+    final segments = normalized.split('/');
+    return segments.isNotEmpty ? segments.last : path;
   }
 }
 
@@ -690,6 +766,47 @@ class HelpWidget extends StatelessWidget {
         Text('Logs example app events to the console. '
             'This is not a plugin feature, purely a part of the example app. '),
       ],
+    );
+  }
+}
+
+class PlatformStatusBanner extends StatelessWidget {
+  const PlatformStatusBanner(
+      {super.key, required this.message, required this.isWarning});
+
+  final String message;
+  final bool isWarning;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final backgroundColor =
+        isWarning ? colorScheme.errorContainer : colorScheme.primaryContainer;
+    final foregroundColor = isWarning
+        ? colorScheme.onErrorContainer
+        : colorScheme.onPrimaryContainer;
+    final icon = isWarning ? Icons.warning : Icons.desktop_windows;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.all(12.0),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: foregroundColor),
+          const SizedBox(width: 8.0),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(color: foregroundColor),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

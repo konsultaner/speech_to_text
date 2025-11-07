@@ -1,5 +1,17 @@
 # Changelog
 
+## 7.4.0-beta.7
+
+### New
+* Experimental Linux support powered by the new `speech_to_text_linux` federated package.
+  Recognition runs fully on-device through Vosk with audio capture provided by PortAudio.
+* Added `SpeechToText.linuxModelPath` and `SpeechToText.linuxVoskLibrary` helpers to simplify
+  passing Linux-specific configuration to `initialize`.
+
+### Notes
+* Linux support currently requires the app to provide a Vosk model path and to install the
+  `libvosk` + PortAudio system dependencies. See the README for detailed setup steps.
+
 ## 7.4.0-beta.6
 
 ### New

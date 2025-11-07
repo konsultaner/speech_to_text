@@ -157,6 +157,17 @@ class SpeechToText {
   static final SpeechConfigOption webDoNotAggregate =
       SpeechConfigOption('web', 'aggregate', false);
 
+  /// Helper to configure the Linux implementation with the location
+  /// of a Vosk model on disk.
+  static SpeechConfigOption linuxModelPath(String path) =>
+      SpeechConfigOption('linux', 'modelPath', path);
+
+  /// Helper to configure the Linux implementation with a custom location
+  /// of the `libvosk` shared library when it is not available in the
+  /// system search path.
+  static SpeechConfigOption linuxVoskLibrary(String path) =>
+      SpeechConfigOption('linux', 'voskLibraryPath', path);
+
   static final SpeechToText _instance = SpeechToText.withMethodChannel();
   bool _initWorked = false;
 

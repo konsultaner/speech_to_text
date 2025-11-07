@@ -5,24 +5,29 @@
 A library that exposes device specific speech recognition capability.
 
 This plugin contains a set of classes that make it easy to use the speech recognition
-capabilities of the underlying platform in Flutter. It supports Android, iOS, MacOS and web. The
-target use cases for this library are commands and short phrases, not continuous spoken
+capabilities of the underlying platform in Flutter. It supports Android, iOS, macOS, Linux,
+Windows and web. The target use cases for this library are commands and short phrases, not continuous spoken
 conversion or always on listening.
 
 ## Platform Support
 
-| Support | Android | iOS | MacOS | Web\* | Linux | Windows |
-| :-----: | :-----: | :-: | :---: | :---: | :---: | :-----: |
-|  build  |   ✅    | ✅  |  ✅   |  ✅   |   ✘   |    ✅    |
-| speech  |   ✅    | ✅  |  ✅   |  ✅   |   ✘   |    ✅    |
+| Support | Android | iOS | MacOS | Web\* | Linux† | Windows |
+| :-----: | :-----: | :-: | :---: | :---: | :----: | :-----: |
+|  build  |   ✅    | ✅  |  ✅   |  ✅   |   ✅   |    ✅    |
+| speech  |   ✅    | ✅  |  ✅   |  ✅   |   ✅   |    ✅    |
 
 _build: means you can build and run with the plugin on that platform_
 
 _speech: means most speech recognition features work. Platforms with build but not speech report false for `initialize`_
 
 \* _Only some browsers are supported, see [here](https://caniuse.com/?search=Web%20Speech%20API)_
+† _Requires PortAudio, libvosk and an app-supplied Vosk model path_
 
 ## Recent Updates
+
+7.4.0-beta.7
+* Experimental Linux support powered by Vosk + PortAudio. Requires an app provided model path.
+* New helpers `SpeechToText.linuxModelPath` / `linuxVoskLibrary` for configuring `initialize`.
 
 7.3.0
 * Now supports speech recognition on Windows with many thanks to @asherchok 
@@ -39,6 +44,32 @@ ready for production use.
 options for controlling haptics and punctuation during recognition on iOS.
 
 _Note_: Feedback from any test devices is welcome.
+
+## Linux setup (beta)
+
+Linux builds rely on the [`speech_to_text_linux`](../speech_to_text_linux) package which
+captures microphone audio with PortAudio and performs offline recognition via Vosk. To run
+on Linux you need to:
+
+1. Install PortAudio headers: `sudo apt install portaudio19-dev`
+2. Install the Vosk shared library (or point the plugin at a local copy with
+   `SpeechToText.linuxVoskLibrary('/path/to/libvosk.so')`).
+3. Download a Vosk acoustic model and keep it on disk. Pass its folder when calling
+   `SpeechToText.initialize`:
+
+```dart
+final speech = SpeechToText();
+final available = await speech.initialize(
+  options: [
+    SpeechToText.linuxModelPath('/opt/models/vosk-model-small-en-us-0.15'),
+    const SpeechConfigOption('linux', 'modelLocale', 'en-US'),
+    const SpeechConfigOption('linux', 'modelDisplayName', 'English (Vosk)'),
+  ],
+);
+```
+
+Once initialized, the standard listen/stop/cancel APIs work the same way as on the other
+platforms.
 
 ## Using
 

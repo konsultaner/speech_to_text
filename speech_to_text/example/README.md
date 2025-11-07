@@ -4,6 +4,24 @@ Demonstrates how to use the speech_to_text plugin. This example requires
 that the plugin has been installed. It initializes speech recognition, 
 listens for words and prints them.  
 
+## Linux setup
+
+The example can run on Linux using the new Vosk backend. Before launching
+`flutter run -d linux` install the native dependencies and point the example
+at your model and optional library paths via environment variables:
+
+```bash
+sudo apt install portaudio19-dev            # PortAudio headers/runtime
+sudo cp path/to/libvosk.so /usr/local/lib && sudo ldconfig
+export SPEECH_TO_TEXT_LINUX_MODEL=/absolute/path/to/vosk-model
+# Optional overrides:
+export SPEECH_TO_TEXT_LINUX_LIB=/absolute/path/to/libvosk.so
+export SPEECH_TO_TEXT_LINUX_LOCALE=en-US
+export SPEECH_TO_TEXT_LINUX_LABEL="English (Vosk)"
+```
+
+If `SPEECH_TO_TEXT_LINUX_MODEL` is missing the Linux build will fail to
+initialize and the app will display the error returned by the plugin.
 
 ## Source
 
